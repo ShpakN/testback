@@ -84,7 +84,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 3. INTEGRATION (Node Test Runner + Mongo in-memory)
+  # 3. INTEGRATION (Node Test Runner + Mongo in-memory )
   integration:
     name: Integration (REST API + Mongo in-memory)
     runs-on: ubuntu-latest
