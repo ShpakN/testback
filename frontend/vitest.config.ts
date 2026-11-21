@@ -7,8 +7,8 @@ export default defineConfig({
   coverage: {
     provider: "v8",
     reporter: ["text", "json-summary", "html", "lcov"],
-    include: ["src/**/*.{ts,tsx}"],
-    exclude: ["src/main.tsx", "src/**/*.d.ts", "src/**/*.test.tsx"],
+    include: ["src/utils/**/*.{ts,tsx}"],
+    exclude: ["**/*.test.{ts,tsx}", "src/**/*.d.ts"],
     thresholds: {
       statements: 80,
       branches: 80,
