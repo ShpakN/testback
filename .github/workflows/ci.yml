@@ -1,7 +1,7 @@
 name: CI
 
 # Триггеры: каждый push и каждый pull request в main.
-# "При каждом сохранении" в CI не работает — для этого настроен pre-commit хук (см. ниже).
+# "При каждом сохранении" в CI не работает — для этого настроен pre-commit хук
 on:
   push:
     branches: [main, develop]
