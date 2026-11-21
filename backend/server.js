@@ -1,17 +1,16 @@
 require("dotenv").config();
 
-const mongoose = require("mongoose");
 const app = require("./index");
-const { connection, PORT } = require("./config/db");
+const { connectDB, PORT } = require("./config/db");
 
 if (require.main === module) {
   (async () => {
     try {
-      await connection;
+      await connectDB();
       console.log("Connected to DataBase");
       app.listen(PORT, () => console.log(`Listening on PORT: ${PORT}`));
     } catch (e) {
-      console.error(`${e} is giving while connecting`);
+      console.error(`${e} while connecting`);
       process.exit(1);
     }
   })();
