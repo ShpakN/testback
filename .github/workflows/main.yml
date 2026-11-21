@@ -1,6 +1,6 @@
 name: CI
 
-# Триггеры: каждый push и каждый pull request в main.
+# Триггеры: каждый push и каждый pull request в mai
 # "При каждом сохранении" в CI не работает — для этого настроен pre-commit хук (см. ниже).
 on:
   push:
@@ -18,9 +18,7 @@ env:
   NODE_VERSION: "20"
 
 jobs:
-  # ==========================================================
-  # СТАДИЯ 1: LINT + UNIT-ТЕСТЫ + COVERAGE GATE
-  # ==========================================================
+  # Стадия 1: LINT + UNIT-ТЕСТЫ + COVERAGE GATE
   unit-lint:
     name: Lint + Unit (coverage >= 80%)
     runs-on: ubuntu-latest
@@ -36,7 +34,7 @@ jobs:
             frontend/package-lock.json
             backend/package-lock.json
 
-      # ---------- FRONTEND: install, lint, unit + coverage ----------
+      #  FRONTEND: install, lint, unit + coverage 
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
@@ -49,9 +47,9 @@ jobs:
         working-directory: frontend
         run: npm run test:coverage -- --reporter=verbose --reporter=junit --outputFile=reports/vitest-junit.xml
 
-      # ---------- QUALITY GATE: coverage < 80% => пайплайн падает ----------
+      #  QUALITY GATE: coverage < 80% => пайплайн падает 
       # c8/vitest сам падает, если не выполнен порог из vitest.config.ts,
-      # но дополнительно проверяем summary явно, чтобы падение было наглядным.
+      # но проверяем summary явно, чтобы падение было наглядным.
       - name: Quality gate — coverage >= 80%
         if: always()
         run: node scripts/check-coverage.mjs
@@ -72,7 +70,7 @@ jobs:
         run: cat coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY || true
         working-directory: frontend
 
-      # ---------- BACKEND: install, lint ----------
+      #  BACKEND: install, lint 
       - name: Install backend deps
         working-directory: backend
         run: npm ci
@@ -81,16 +79,14 @@ jobs:
         working-directory: backend
         run: npm run lint
 
-  # ==========================================================
-  # СТАДИЯ 2: SECURITY — критические уязвимости валят пайплайн
-  # ==========================================================
+  # Стадия 2: SECURITY — критические уязвимости валят пайплайн
   security:
     name: Security (npm audit + gitleaks)
     runs-on: ubuntu-latest
     # Не блокирует unit-lint, но падение отсюда блокирует integration и e2e
     needs: [unit-lint]
 
-    steps
+    steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -104,7 +100,7 @@ jobs:
           cd frontend && npm ci --ignore-scripts
           cd ../backend && npm ci --ignore-scripts
 
-      # ---------- QUALITY GATE: critical vulnerabilities => FAIL ----------
+      #  QUALITY GATE: critical vulnerabilities => FAIL 
       - name: npm audit — critical/moderate gate
         run: |
           echo "=== frontend ==="
@@ -119,9 +115,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ==========================================================
-  # СТАДИЯ 3: INTEGRATION (MongoDB in-memory, Supertest)
-  # ==========================================================
+  # Стадия 3: INTEGRATION (MongoDB in-memory, Supertest)
   integration:
     name: Integration (REST API + Mongo in-memory)
     runs-on: ubuntu-latest
@@ -161,9 +155,7 @@ jobs:
           path: backend/reports/
           retention-days: 14
 
-  # ==========================================================
-  # СТАДИЯ 4: E2E (Playwright, Chromium)
-  # ==========================================================
+  # Стадия 4: E2E (Playwright, Chromium)
   e2e:
     name: E2E (Playwright Chromium)
     runs-on: ubuntu-latest
@@ -229,9 +221,7 @@ jobs:
             e2e/test-results/
           retention-days: 14
 
-  # ==========================================================
-  # СТАДИЯ 5: BUILD — выполняется, только если всё зелёное
-  # ==========================================================
+  # Стадия 5: BUILD — выполняется, только если всё корректно (зелёное)
   build:
     name: Build (deploy-ready)
     runs-on: ubuntu-latest
