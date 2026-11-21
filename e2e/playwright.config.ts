@@ -34,24 +34,30 @@ export default defineConfig({
   },
 
   webServer: isRemote
-    ? undefined
-    : [
-        {
-          command: 'npm start',
-          cwd: '../backend',
-          url: 'http://localhost:5000/',
-          reuseExistingServer: true,
-          timeout: 60_000,
-          stdout: 'pipe',
-          stderr: 'pipe',
+  ? undefined
+  : [
+      {
+        command: 'npm start',
+        cwd: '../backend',
+        url: 'http://localhost:5000/',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: {
+          MONGO_URI: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/edgistify',
+          JWT_SECRET: process.env.JWT_SECRET || 'ci-test-secret',
+          PORT: '5000',
         },
-        {
-          command: 'npm run dev',
-          url: 'http://localhost:5173/',
-          reuseExistingServer: true,
-          timeout: 120_000,
-        },
-      ],
+      },
+      {
+        command: 'npm run dev',
+        cwd: '../frontend',
+        url: 'http://localhost:5173/',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
+    ],
 
   projects: [
     {
