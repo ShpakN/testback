@@ -86,7 +86,7 @@ jobs:
     # Не блокирует unit-lint, но падение отсюда блокирует integration и e2e
     needs: [unit-lint]
 
-    steps
+    steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
