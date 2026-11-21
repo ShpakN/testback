@@ -1,16 +1,10 @@
 require("dotenv").config();
-const mongoose = require("mongoose");
+const connectDB = async () => {
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    throw new Error("В .env не задан MONGO_URI");
+  }
+  await mongoose.connect(uri);
+};
 
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
-const PORT = process.env.PORT || 5000;
-
-if (!MONGO_URI) {
-  throw new Error("В .env не задан MONGO_URI");
-}
-
-const connection = mongoose.connect(MONGO_URI).catch((e) => {
-  console.error("MongoDB connection error:", e.message);
-  throw e;
-});
-
-module.exports = { connection, PORT };
+module.exports = connectDB;
