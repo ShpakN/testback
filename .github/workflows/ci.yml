@@ -94,6 +94,7 @@ jobs:
       JWT_SECRET: ci-test-secret
       JWT_KEY: ci-test-secret
       NODE_ENV: test
+      MONGO_URI: mongodb://127.0.0.1:27017/placeholder
 
     steps:
       - uses: actions/checkout@v4
