@@ -121,6 +121,7 @@ jobs:
     env:
       JWT_SECRET: ci-test-secret
       NODE_ENV: test
+      MONGO_URI: mongodb://127.0.0.1:27017/placeholder
 
     steps:
       - uses: actions/checkout@v4
@@ -128,6 +129,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Install e2e deps
+        working-directory: e2e
+        run: npm install --no-audit --no-fund
 
       - name: Install frontend deps
         working-directory: frontend
@@ -138,19 +143,19 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Install Playwright browsers
-        working-directory: frontend
+        working-directory: e2e
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        working-directory: frontend
-        run: npx playwright test --reporter=list
+        working-directory: e2e
+        run: npx playwright test --project=chromium --reporter=list
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          path: e2e/playwright-report/
           if-no-files-found: ignore
 
       - name: Upload Playwright traces
@@ -158,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces
-          path: frontend/test-results/
+          path: e2e/results/
           if-no-files-found: ignore
 
   # 5. BUILD (deploy-ready) — блокируется при падении unit
