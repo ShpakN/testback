@@ -18,23 +18,17 @@ jobs:
     defaults:
       run:
         working-directory: frontend
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - name: Install frontend deps
         run: npm install --no-audit --no-fund
-
       - name: Lint frontend (ESLint)
         run: npm run lint
-
       - name: Unit tests + coverage (Vitest)
-        run: npm run test:coverage -- --reporter=verbose --reporter=junit --outputFile=reports/vitest-junit.xml
-
+        run: npm run test:coverage -- --reporter=verbose
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -43,81 +37,60 @@ jobs:
           path: frontend/coverage/
           if-no-files-found: warn
 
-      - name: Unit test report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-junit
-          path: frontend/reports/vitest-junit.xml
-          if-no-files-found: ignore
-
-  # 2. SECURITY GATE (npm audit + gitleaks)
+  # 2. SECURITY GATE
   security:
     name: Security (npm audit + gitleaks)
     runs-on: ubuntu-latest
     needs: [unit]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - name: Install frontend deps
         working-directory: frontend
         run: npm install --no-audit --no-fund
-
       - name: Install backend deps
         working-directory: backend
         run: npm install --no-audit --no-fund
-
       - name: npm audit — frontend (critical)
         working-directory: frontend
         run: npm audit --audit-level=critical
-
       - name: npm audit — backend (critical)
         working-directory: backend
         run: npm audit --audit-level=critical
-
       - name: Gitleaks — secrets scan
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 3. INTEGRATION (Node Test Runner + Mongo in-memory)
+  # 3. INTEGRATION
   integration:
     name: Integration (REST API + Mongo in-memory)
     runs-on: ubuntu-latest
     needs: [unit]
-
     env:
       JWT_SECRET: ci-test-secret
       JWT_KEY: ci-test-secret
       NODE_ENV: test
       MONGO_URI: mongodb://127.0.0.1:27017/placeholder
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - name: Install backend deps
         working-directory: backend
         run: npm install --no-audit --no-fund
-
       - name: Run integration tests
         working-directory: backend
         run: npm run test:integration
 
-  # 4. E2E (Playwright + Chromium)
+  # 4. E2E
   e2e:
     name: E2E (Playwright Chromium)
     runs-on: ubuntu-latest
     needs: [unit]
-
     services:
       mongodb:
         image: mongo:7
@@ -128,51 +101,43 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     env:
       JWT_SECRET: ci-test-secret
       NODE_ENV: test
       MONGO_URI: mongodb://127.0.0.1:27017/edgistify
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - name: Install e2e deps
         working-directory: e2e
         run: npm install --no-audit --no-fund
-
       - name: Install frontend deps
         working-directory: frontend
         run: npm install --no-audit --no-fund
-
       - name: Install backend deps
         working-directory: backend
         run: npm install --no-audit --no-fund
-
       - name: Install Playwright browsers
         working-directory: e2e
         run: npx playwright install --with-deps chromium
-
+      - name: Debug backend startup
+        working-directory: backend
+        env:
+          PORT: "5000"
+        run: |
+          echo "--- env ---"
+          echo "MONGO_URI=$MONGO_URI"
+          echo "JWT_SECRET set: $([ -n "$JWT_SECRET" ] && echo YES || echo NO)"
+          echo "--- try start server 8s ---"
+          timeout 8s node server.js || echo "server exited"
       - name: Seed database
         working-directory: backend
         run: npm run seed || echo "seed script missing, skip"
-      - name: Debug backend startup
-        working-directory: backend
-        run: |
-          node -e "
-            require('dotenv').config();
-            console.log('MONGO_URI=' + (process.env.MONGO_URI || 'MISSING'));
-            console.log('JWT_SECRET=' + (process.env.JWT_SECRET ? 'OK' : 'MISSING'));
-          "
-          timeout 10s node server.js || true  
       - name: Run E2E tests
         working-directory: e2e
         run: npx playwright test --project=chromium --reporter=list
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -180,7 +145,6 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report/
           if-no-files-found: ignore
-
       - name: Upload Playwright traces
         if: failure()
         uses: actions/upload-artifact@v4
@@ -189,27 +153,22 @@ jobs:
           path: e2e/results/
           if-no-files-found: ignore
 
-  # 5. BUILD (deploy-ready) — блокируется при падении unit
+  # 5. BUILD
   build:
     name: Build (deploy-ready)
     runs-on: ubuntu-latest
     needs: [unit, integration]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - name: Install frontend deps
         working-directory: frontend
         run: npm install --no-audit --no-fund
-
       - name: Build frontend
         working-directory: frontend
         run: npm run build
-
       - name: Upload dist
         uses: actions/upload-artifact@v4
         with:
