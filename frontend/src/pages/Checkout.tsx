@@ -63,19 +63,25 @@ function Checkout() {
 
     setLoading(true);
     const orderData = {
-      userId: localStorage.getItem("userId"),
-      products: cartItems.map((item) => ({
-        img1: item.img1,
-        title: item.title,
-        productId: item._id,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      totalPrice: Math.round(calculateTotal()),
-      shippingAddress: `${formData.address}, ${formData.city}, ${formData.pinCode}`,
-      paymentStatus: "Pending",
-      orderStatus: "Pending",
-    };
+  userId: localStorage.getItem("userId"),   
+  products: cartItems.map((item) => ({
+    productId: item._id,
+    title: item.title,
+    quantity: item.quantity,
+    price: item.price,
+    images: item.img1 ? [item.img1] : [],   // ← img1 → images: [url]
+  })),
+  totalPrice: Math.round(calculateTotal()),
+  shippingAddress: {
+    fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+    address: formData.address,
+    city: formData.city,
+    postalCode: formData.pinCode,            // ← pinCode → postalCode
+    phone: "",                                
+  },
+  paymentStatus: "Pending",
+  orderStatus: "Pending",
+};
 
     try {
       await createOrder(orderData);
