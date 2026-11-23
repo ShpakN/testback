@@ -33,31 +33,22 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
 
-  webServer: isRemote
-  ? undefined
-  : [
-      {
-        command: 'npm start',
-        cwd: '../backend',
-        url: 'http://localhost:5000/',
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-        stdout: 'pipe',
-        stderr: 'pipe',
-        env: {
-          MONGO_URI: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/edgistify',
-          JWT_SECRET: process.env.JWT_SECRET || 'ci-test-secret',
-          PORT: '5000',
-        },
-      },
-      {
-        command: 'npm run dev',
-        cwd: '../frontend',
-        url: 'http://localhost:5173/',
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-      },
-    ],
+  webServer: [
+  {
+    command: "node server.js",        
+    cwd: "../backend",
+    url: "http://localhost:5000/api/products",  // чтобы Playwright ждал готовности
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
+  {
+    command: "npm run dev",
+    cwd: "../frontend",
+    url: "http://localhost:5173",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  }
+],
 
   projects: [
     {
@@ -66,3 +57,4 @@ export default defineConfig({
     },
   ],
 });
+
