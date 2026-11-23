@@ -1,11 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Читаем .env локально (в CI его нет — поэтому только для локального запуска)
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '../backend/.env') });  // ← 2-й .env backend
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
-const API_URL = process.env.API_URL || 'http://localhost:5000/api';
-const isRemote = !BASE_URL.includes('localhost') && !BASE_URL.includes('127.0.0.1');
+const API_URL  = process.env.API_URL  || 'http://localhost:5000/api';
 
 export default defineConfig({
   testDir: '../e2e',
@@ -34,21 +36,35 @@ export default defineConfig({
   },
 
   webServer: [
-  {
-    command: "node server.js",        
-    cwd: "../backend",
-    url: "http://localhost:5000/api/products",  // чтобы Playwright ждал готовности
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
-  {
-    command: "npm run dev",
-    cwd: "../frontend",
-    url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  }
-],
+    {
+      command: "node server.js",
+      cwd: "../backend",
+      url: "http://localhost:5000/api/products",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        PORT: "5000",
+        NODE_ENV: "test",
+        MONGO_URI: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/edgistify",
+        JWT_SECRET: process.env.JWT_SECRET || "dev-secret",
+        JWT_KEY: process.env.JWT_KEY || "dev-secret",
+      },
+    },
+    {
+      command: "npm run dev -- --port 5173 --strictPort",
+      cwd: "../frontend",
+      url: "http://localhost:5173",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        VITE_API_URL: "http://localhost:5000",
+      },
+    },
+  ],
 
   projects: [
     {
@@ -57,4 +73,3 @@ export default defineConfig({
     },
   ],
 });
-
