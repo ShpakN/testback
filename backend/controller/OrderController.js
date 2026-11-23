@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const OrderModel = require("../models/OrderModel");
 
 const createOrder = async (req, res) => {
@@ -31,9 +32,11 @@ const createOrder = async (req, res) => {
     });
 
     await order.save();
+    
+    console.log("[ORDER] saved:", order._id);
     res.status(201).json({ message: "Order added successfully", order });
   } catch (error) {
-    console.error('[ORDER] save failed:', error.message, error);
+    console.error("[ORDER] save failed:", error.message, error.errors || "");
     res.status(500).json({ message: "Error", error: error.message });
   }
 };
