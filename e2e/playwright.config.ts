@@ -1,13 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Читаем .env локально (в CI его нет — поэтому только для локального запуска)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+
 dotenv.config({ path: path.resolve(__dirname, '.env') });
-dotenv.config({ path: path.resolve(__dirname, '../backend/.env') });  // ← 2-й .env backend
+dotenv.config({ path: path.resolve(__dirname, '../backend/.env') });
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 const API_URL  = process.env.API_URL  || 'http://localhost:5000/api';
+const isRemote = !BASE_URL.includes('localhost') && !BASE_URL.includes('127.0.0.1');
 
 export default defineConfig({
   testDir: '../e2e',
