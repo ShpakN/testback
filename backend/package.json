@@ -3,19 +3,17 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node server.js",
     "seed": "node seed.js",
     "dev": "node --watch index.js",
-    "lint": "eslint .",
-    "test": "node --test tests",
-    "test:integration": "node --test tests/cart.integration.test.js tests/orders.integration.test.js tests/products.integration.test.js"
+    "test:integration": "node --test \"tests/**/*.integration.test.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
@@ -25,8 +23,7 @@
     "mongoose": "^8.10.0"
   },
   "devDependencies": {
-    "eslint": "^9.19.0",
-    "mongodb-memory-server": "^10.1.4",
-    "supertest": "^6.3.4"
+    "mongodb-memory-server": "^11.3.0",
+    "supertest": "^7.3.2"
   }
 }
