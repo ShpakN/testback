@@ -1,3 +1,5 @@
+[![Lab3 CI](https://github.com/ShpakN/testback/actions/workflows/main.yml/badge.svg)](https://github.com/ShpakN/testback/actions/workflows/main.yml)
+
 # E-Commerce Platform
 
 ## Overview
