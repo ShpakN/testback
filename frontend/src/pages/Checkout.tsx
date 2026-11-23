@@ -103,7 +103,7 @@ function Checkout() {
                     {field.replace(/([A-Z])/g, " $1")} <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type={field === "email" ? "email" : field === "pinCode" ? "number" : "text"}
+                    type={field === "email" ? "email" : "text"}
                     name={field}
                     required
                     className="block w-full rounded-md px-4 py-3 border border-gray-300 outline-none mt-1 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
