@@ -160,7 +160,15 @@ jobs:
       - name: Seed database
         working-directory: backend
         run: npm run seed || echo "seed script missing, skip"
-
+      - name: Debug backend startup
+        working-directory: backend
+        run: |
+          node -e "
+            require('dotenv').config();
+            console.log('MONGO_URI=' + (process.env.MONGO_URI || 'MISSING'));
+            console.log('JWT_SECRET=' + (process.env.JWT_SECRET ? 'OK' : 'MISSING'));
+          "
+          timeout 10s node server.js || true  
       - name: Run E2E tests
         working-directory: e2e
         run: npx playwright test --project=chromium --reporter=list
