@@ -3,54 +3,60 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const isCI = !!process.env.CI;
+
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
-const API_URL = process.env.API_URL || 'http://localhost:5000/api';
 const isRemote = !BASE_URL.includes('localhost') && !BASE_URL.includes('127.0.0.1');
 
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  // В CI — 1 воркер: тесты делят одну БД и один backend
+  workers: isCI ? 1 : undefined,
   timeout: 45_000,
   expect: { timeout: 10_000 },
 
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['junit', { outputFile: 'results/junit.xml' }], // пригодится для quality gates
+    ['junit', { outputFile: 'results/junit.xml' }],
   ],
 
   use: {
-  baseURL: process.env.BASE_URL ?? "http://localhost:5173",
-  navigationTimeout: 30_000,
-  actionTimeout: 15_000,
-  trace: "on-first-retry",
-  video: "retain-on-failure",
-  screenshot: "only-on-failure",
-},
+    baseURL: BASE_URL,
+    navigationTimeout: 30_000,
+    actionTimeout: 15_000,
+    trace: 'on-first-retry',
+    video: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
 
-  // Локальный режим: Playwright сам поднимает backend + frontend.
-  // Для удалённого стенда webServer отключается.
+  // Локально и в CI Playwright сам поднимает backend + frontend.
+  // Для удалённого стенда (BASE_URL не localhost) webServer отключается.
   webServer: isRemote
     ? undefined
     : [
         {
-          command: 'npm start',
+          // start:ci выполняет seed и стартует backend на порту 5000
+          command: 'npm run start:ci',
           cwd: '../backend',
-          url: 'http://localhost:5000/',
-          reuseExistingServer: true,
-          timeout: 60_000,
+          url: 'http://localhost:5000/api/products',
+          // В CI всегда стартуем чистый сервер с seed, локально можно переиспользовать
+          reuseExistingServer: !isCI,
+          timeout: 120_000,
           stdout: 'pipe',
           stderr: 'pipe',
         },
         {
-          command: 'npm run dev',
+          command: 'npm run dev -- --port 5173',
           cwd: '../frontend',
           url: 'http://localhost:5173/',
-          reuseExistingServer: true,
+          reuseExistingServer: !isCI,
           timeout: 120_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
         },
       ],
 
