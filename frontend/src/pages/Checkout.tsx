@@ -63,25 +63,19 @@ function Checkout() {
 
     setLoading(true);
     const orderData = {
-  userId: localStorage.getItem("userId"),   
-  products: cartItems.map((item) => ({
-    productId: item._id,
-    title: item.title,
-    quantity: item.quantity,
-    price: item.price,
-    images: item.img1 ? [item.img1] : [],   // ← img1 → images: [url]
-  })),
-  totalPrice: Math.round(calculateTotal()),
-  shippingAddress: {
-    fullName: `${formData.firstName} ${formData.lastName}`.trim(),
-    address: formData.address,
-    city: formData.city,
-    postalCode: formData.pinCode,            // ← pinCode → postalCode
-    phone: "",                                
-  },
-  paymentStatus: "Pending",
-  orderStatus: "Pending",
-};
+      userId: localStorage.getItem("userId"),
+      products: cartItems.map((item) => ({
+        img1: item.img1,
+        title: item.title,
+        productId: item._id,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      totalPrice: Math.round(calculateTotal()),
+      shippingAddress: `${formData.address}, ${formData.city}, ${formData.pinCode}`,
+      paymentStatus: "Pending",
+      orderStatus: "Pending",
+    };
 
     try {
       await createOrder(orderData);
@@ -109,7 +103,7 @@ function Checkout() {
                     {field.replace(/([A-Z])/g, " $1")} <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type={field === "email" ? "email" : "text"}
+                    type={field === "email" ? "email" : field === "pinCode" ? "number" : "text"}
                     name={field}
                     required
                     className="block w-full rounded-md px-4 py-3 border border-gray-300 outline-none mt-1 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
