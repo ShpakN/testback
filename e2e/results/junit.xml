@@ -1,2 +1,48 @@
-<testsuites id="" name="" tests="0" failures="0" skipped="0" errors="0" time="7.574541999999999">
+<testsuites id="" name="" tests="18" failures="0" skipped="0" errors="0" time="27.131297">
+<testsuite name="01-registration.spec.ts" timestamp="2026-11-24T12:29:19.798Z" hostname="chromium" tests="3" failures="0" skipped="0" time="10.854" errors="0">
+<testcase name="Регистрация пользователя › успешная регистрация и переход на страницу входа" classname="01-registration.spec.ts" time="5.262">
+</testcase>
+<testcase name="Регистрация пользователя › повторная регистрация с существующим email — ошибка" classname="01-registration.spec.ts" time="3.059">
+</testcase>
+<testcase name="Регистрация пользователя › пустые поля блокируются html5-валидацией" classname="01-registration.spec.ts" time="2.533">
+</testcase>
+</testsuite>
+<testsuite name="02-login-logout.spec.ts" timestamp="2026-11-24T12:29:19.798Z" hostname="chromium" tests="6" failures="0" skipped="0" time="22.425" errors="0">
+<testcase name="Вход в систему › успешный логин и появление кнопки Logout" classname="02-login-logout.spec.ts" time="2.945">
+</testcase>
+<testcase name="Вход в систему › логин с неверным паролем — Login failed" classname="02-login-logout.spec.ts" time="0.563">
+</testcase>
+<testcase name="Вход в систему › логин несуществующего пользователя — User not found" classname="02-login-logout.spec.ts" time="0.31">
+</testcase>
+<testcase name="Вход в систему › закрытые маршруты редиректят на логин" classname="02-login-logout.spec.ts" time="0.249">
+</testcase>
+<testcase name="Выход из системы › Logout очищает токен и возвращает на /login" classname="02-login-logout.spec.ts" time="9.184">
+</testcase>
+<testcase name="Выход из системы › после Logout защищённый маршрут недоступен" classname="02-login-logout.spec.ts" time="9.174">
+</testcase>
+</testsuite>
+<testsuite name="03-product-search.spec.ts" timestamp="2026-11-24T12:29:19.798Z" hostname="chromium" tests="4" failures="0" skipped="0" time="1.683" errors="0">
+<testcase name="Поиск товара › каталог загружается и содержит товары" classname="03-product-search.spec.ts" time="0.247">
+</testcase>
+<testcase name="Поиск товара › поиск по фрагменту названия находит товар" classname="03-product-search.spec.ts" time="0.562">
+</testcase>
+<testcase name="Поиск товара › переход в карточку товара по клику" classname="03-product-search.spec.ts" time="0.314">
+</testcase>
+<testcase name="Поиск товара › фильтр по названию скрывает несовпадающие товары" classname="03-product-search.spec.ts" time="0.56">
+</testcase>
+</testsuite>
+<testsuite name="04-cart.spec.ts" timestamp="2026-11-24T12:29:19.798Z" hostname="chromium" tests="3" failures="0" skipped="0" time="6.455" errors="0">
+<testcase name="Добавление товара в корзину › после логина товар добавляется, и он виден в корзине" classname="04-cart.spec.ts" time="3.026">
+</testcase>
+<testcase name="Добавление товара в корзину › гость не может добавить в корзину" classname="04-cart.spec.ts" time="0.315">
+</testcase>
+<testcase name="Добавление товара в корзину › удаление товара из корзины" classname="04-cart.spec.ts" time="3.114">
+</testcase>
+</testsuite>
+<testsuite name="05-checkout.spec.ts" timestamp="2026-11-24T12:29:19.798Z" hostname="chromium" tests="2" failures="0" skipped="0" time="6.096" errors="0">
+<testcase name="Оформление заказа › полный happy path: каталог → корзина → checkout → /placed" classname="05-checkout.spec.ts" time="3.193">
+</testcase>
+<testcase name="Оформление заказа › checkout с пустой корзиной не создаёт заказ" classname="05-checkout.spec.ts" time="2.903">
+</testcase>
+</testsuite>
 </testsuites>
