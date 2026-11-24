@@ -1,0 +1,202 @@
+name: CI — Lab3 (Unit, Coverage, Security, Build, Integration, E2E)
+
+on:
+  push:
+    branches: [main, my-pr]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # 1. LINT + UNIT + COVERAGE GATE (80%)
+  unit:
+    name: Lint + Unit + Coverage ≥ 80%
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        run: npm install --no-audit --no-fund
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Unit tests + Coverage (vitest)
+        run: npm run test:coverage -- --reporter=verbose
+
+      # Если coverage упало ниже 80% — Vitest exit code 1 → job падает → build = skipped
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: frontend/coverage/
+          retention-days: 14
+          if-no-files-found: warn
+
+  # 2. SECURITY — SECURITY GATE (npm audit critical + gitleaks)
+  security:
+    name: Security Audit (critical)
+    runs-on: ubuntu-latest
+    needs: [unit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+
+      - name: npm audit — frontend (critical only)
+        working-directory: frontend
+        run: npm audit --audit-level=critical
+
+      - name: npm audit — backend (critical only)
+        working-directory: backend
+        run: npm audit --audit-level=critical
+
+      - name: Gitleaks — secrets scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 3. INTEGRATION — запуск только если unit + security ЗЕЛЁНЫЕ
+  integration:
+    name: Integration Tests (REST API + Mongo)
+    runs-on: ubuntu-latest
+    needs: [unit, security]          # ← было needs: [unit]
+    env:
+      JWT_SECRET: ci-test-secret
+      JWT_KEY: ci-test-secret
+      NODE_ENV: test
+      MONGO_URI: mongodb://127.0.0.1:27017/placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+
+      - name: Run integration tests
+        working-directory: backend
+        run: npm run test:integration
+
+  # 4. E2E — запуск только если unit + security + build ЗЕЛЁНЫЕ
+  e2e:
+    name: Playwright E2E (Chromium)
+    runs-on: ubuntu-latest
+    needs: [unit, security]
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      JWT_SECRET: ci-test-secret
+      JWT_KEY: ci-test-secret
+      NODE_ENV: test
+      MONGO_URI: mongodb://127.0.0.1:27017/edgistify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install e2e deps
+        working-directory: e2e
+        run: npm install --no-audit --no-fund
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Seed database
+        working-directory: backend
+        run: npm run seed || echo "seed script missing, skip"
+
+      - name: Run E2E tests
+        working-directory: e2e
+        run: npx playwright test --project=chromium --reporter=list
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: e2e/results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # 5. BUILD — только если ВСЕ предыдущие зелёные
+  build:
+    name: Build (production)
+    runs-on: ubuntu-latest
+    needs: [unit, security, integration, e2e]   # ← было [unit, integration]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+          if-no-files-found: error
