@@ -116,4 +116,9 @@ describe("calculateTotal — ветвления", () => {
       ])
     ).toBe(2000);
   });
+  describe("DEMO: unit quality gate", () => {
+  it("намеренно падающий тест — проверка блокировки Build", () => {
+    expect(1 + 1).toBe(3);
+  });
+});
 });
