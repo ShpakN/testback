@@ -181,3 +181,5 @@ This project is licensed under the MIT License
 
 
 
+
+![CI](https://github.com/ShpakN/testback/actions/workflows/ci.yml/badge.svg?branch=my-pr)
