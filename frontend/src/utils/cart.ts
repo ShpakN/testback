@@ -50,3 +50,12 @@ export function buildCartPayload(product: CartProduct): CartPayload {
     quantity: product.quantity ?? 1,
   };
 }
+/** Демо-функция для проверки coverage gate. */
+export function deadBranch(x: number, y: number): number {
+  if (x > 0) {
+    if (y > 0) return x + y;
+    return x - y;
+  }
+  if (x === 0) return 0;
+  return x * y;
+}
