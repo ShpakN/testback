@@ -1,5 +1,4 @@
-[![Lab3 CI](https://github.com/ShpakN/testback/actions/workflows/main.yml/badge.svg)](https://github.com/ShpakN/testback/actions/workflows/main.yml)
-
+[![Lab3 CI](https://github.com/ShpakN/testback/actions/workflows/ci.yml/badge.svg?branch=my-pr)](https://github.com/ShpakN/testback/actions/workflows/ci.yml)
 # E-Commerce Platform
 
 ## Overview
