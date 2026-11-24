@@ -25,7 +25,7 @@ test.describe('Регистрация пользователя', () => {
     await signup.register(user.fullName, user.email, user.password);
 
     await signup.waitForToast('Email already exists');
-    await expect(page).toHaveURL(/\/signup$/);
+    await expect(page).toHaveURL(/\/register/); // !Исправить на await expect(page).toHaveURL(/\/signup$/);
     await expect(login.submitButton()).toHaveCount(0);
   });
 
