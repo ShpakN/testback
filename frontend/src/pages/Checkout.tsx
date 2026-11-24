@@ -57,25 +57,32 @@ function Checkout() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (cartItems.length === 0) {
-      toast.error("Your cart is empty!");
-      return;
-    }
+  // дождаться загрузки корзины с сервера, если ещё грузится
+  const fresh = await getCartItems();
+  if (!fresh.data || fresh.data.length === 0) {
+    toast.error("Your cart is empty!");
+    return;
+  }
+}
 
     setLoading(true);
     const orderData = {
-      userId: localStorage.getItem("userId"),
-      products: cartItems.map((item) => ({
-        img1: item.img1,
-        title: item.title,
-        productId: item._id,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      totalPrice: Math.round(calculateTotal()),
-      shippingAddress: `${formData.address}, ${formData.city}, ${formData.pinCode}`,
-      paymentStatus: "Pending",
-      orderStatus: "Pending",
-    };
+  products: cartItems.map((item) => ({
+    productId: item._id,
+    title: item.title,
+    price: item.price,
+    quantity: item.quantity,
+    images: item.img1 ? [item.img1] : [],
+  })),
+  totalPrice: Math.round(calculateTotal()),
+  shippingAddress: {
+    fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+    address: formData.address,
+    city: formData.city,
+    postalCode: formData.pinCode,
+    phone: "",
+  },
+};
 
     try {
       await createOrder(orderData);
@@ -103,7 +110,7 @@ function Checkout() {
                     {field.replace(/([A-Z])/g, " $1")} <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type={field === "email" ? "email" : field === "pinCode" ? "number" : "text"}
+                    type={field === "email" ? "email" : "text"}
                     name={field}
                     required
                     className="block w-full rounded-md px-4 py-3 border border-gray-300 outline-none mt-1 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"

@@ -1,11 +1,15 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 // import logo from "../assets/shoes.png";
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const token: string | null = localStorage.getItem("token");
+  const [token, setToken] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  useEffect(() => {
+    setToken(localStorage.getItem("token"));
+  }, [location.pathname]);
 
   const logout = (): void => {
     localStorage.removeItem("token");
