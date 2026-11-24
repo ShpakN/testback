@@ -117,6 +117,25 @@ jobs:
       - name: Install Playwright browsers
         working-directory: e2e
         run: npx playwright install --with-deps chromium
+      - name: Seed database
+        working-directory: backend
+        env:
+          MONGO_URI: mongodb://127.0.0.1:27017/edgistify
+        run: npm run seed
+
+      - name: Verify DB seeded
+        working-directory: backend
+        env:
+          MONGO_URI: mongodb://127.0.0.1:27017/edgistify
+        run: |
+          node -e "
+          const m=require('mongoose');
+          m.connect(process.env.MONGO_URI).then(async()=>{
+            const n=await m.connection.db.collection('products').countDocuments();
+            console.log('products:', n);
+            if(!n) process.exit(1);
+            await m.disconnect();
+          });"
       - name: Run Playwright E2E (Playwright поднимает backend+frontend через webServer)
         working-directory: e2e
         run: npx playwright test --project=chromium --reporter=list
