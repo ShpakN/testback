@@ -11,8 +11,11 @@ permissions:
   contents: read
 
 jobs:
+  # ============================================================
+  # 1. LINT + UNIT + COVERAGE (frontend)
+  # ============================================================
   unit:
-    name: Lint + Unit + Coverage ≥ 80%
+    name: Lint + Unit + Coverage >= 80%
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,10 +35,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-coverage
+          name: coverage-report
           path: frontend/coverage/
           if-no-files-found: warn
 
+  # ============================================================
+  # 2. SECURITY GATE
+  # ============================================================
   security:
     name: Security Audit (critical)
     runs-on: ubuntu-latest
@@ -51,10 +57,10 @@ jobs:
       - name: Install backend deps
         working-directory: backend
         run: npm ci
-      - name: npm audit — frontend
+      - name: npm audit - frontend
         working-directory: frontend
         run: npm audit --audit-level=critical
-      - name: npm audit — backend
+      - name: npm audit - backend
         working-directory: backend
         run: npm audit --audit-level=critical
       - name: Gitleaks
@@ -62,14 +68,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ============================================================
+  # 3. INTEGRATION (REST API + Mongo service)
+  # ============================================================
   integration:
     name: Integration Tests (REST API + Mongo)
     runs-on: ubuntu-latest
     needs: [unit]
+    services:
+      mongodb:
+        image: mongo:7
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       JWT_SECRET: ci-test-secret
       JWT_KEY: ci-test-secret
       NODE_ENV: test
+      MONGO_URI: mongodb://127.0.0.1:27017/edgistify_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -78,10 +95,23 @@ jobs:
       - name: Install backend deps
         working-directory: backend
         run: npm ci
+      - name: Wait for MongoDB healthy
+        run: |
+          for i in {1..30}; do
+            if mongosh "mongodb://127.0.0.1:27017/edgistify_test" --eval "db.runCommand({ping:1})" --quiet; then
+              echo "MongoDB is up"
+              break
+            fi
+            echo "waiting for MongoDB... ($i)"
+            sleep 2
+          done
       - name: Run integration tests
         working-directory: backend
         run: npm run test:integration
 
+  # ============================================================
+  # 4. E2E (Playwright Chromium)
+  # ============================================================
   e2e:
     name: Playwright E2E (Chromium)
     runs-on: ubuntu-latest
@@ -114,9 +144,18 @@ jobs:
       - name: Install e2e deps
         working-directory: e2e
         run: npm ci
-      - name: Install Playwright browsers
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
+
+      - name: Wait for MongoDB healthy
+        run: |
+          for i in {1..30}; do
+            if mongosh "mongodb://127.0.0.1:27017/edgistify" --eval "db.runCommand({ping:1})" --quiet; then
+              echo "MongoDB is up"
+              break
+            fi
+            echo "waiting for MongoDB... ($i)"
+            sleep 2
+          done
+
       - name: Seed database
         working-directory: backend
         env:
@@ -129,21 +168,41 @@ jobs:
           MONGO_URI: mongodb://127.0.0.1:27017/edgistify
         run: |
           node -e "
-          const m=require('mongoose');
-          m.connect(process.env.MONGO_URI).then(async()=>{
-            const n=await m.connection.db.collection('products').countDocuments();
-            console.log('products:', n);
-            if(!n) process.exit(1);
+          const m = require('mongoose');
+          m.connect(process.env.MONGO_URI).then(async () => {
+            const n = await m.connection.db.collection('products').countDocuments();
+            console.log('products in DB:', n);
             await m.disconnect();
-          });"
-      - name: Run Playwright E2E (Playwright поднимает backend+frontend через webServer)
+            if (!n) { console.error('DB is empty - seed failed'); process.exit(1); }
+          }).catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E
         working-directory: e2e
         run: npx playwright test --project=chromium --reporter=list
+
+      - name: Backend API smoke check (diagnostics)
+        if: failure()
+        run: |
+          echo "=== curl /api/products ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5000/api/products || true
+          echo "=== curl /api/users/signup ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST http://localhost:5000/api/users/signup \
+            -H "Content-Type: application/json" \
+            -d '{"name":"ci","email":"ci-'$RANDOM'@test.com","password":"password123"}' || true
+          echo "=== curl through Vite proxy ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5173/api/products || true
+
       - name: Dump MongoDB counts on failure
         if: failure()
         run: |
           mongosh "mongodb://127.0.0.1:27017/edgistify" --eval "db.products.countDocuments()" || true
           mongosh "mongodb://127.0.0.1:27017/edgistify" --eval "db.users.countDocuments()" || true
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -151,14 +210,18 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report/
           if-no-files-found: ignore
+
       - name: Upload traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces
-          path: e2e/results/
+          path: e2e/test-results/
           if-no-files-found: ignore
 
+  # ============================================================
+  # 5. BUILD (production)
+  # ============================================================
   build:
     name: Build (production)
     runs-on: ubuntu-latest
